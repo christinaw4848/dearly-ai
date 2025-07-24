@@ -258,18 +258,22 @@
         function addMessage(content, sender) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${sender}`;
-            
+
             const avatar = document.createElement('div');
             avatar.className = 'message-avatar';
             avatar.textContent = sender === 'user' ? 'U' : 'A';
-            
+
             const messageContent = document.createElement('div');
             messageContent.className = 'message-content';
-            messageContent.textContent = content;
-            
+            if (sender === 'assistant') {
+                messageContent.innerHTML = content;
+            } else {
+                messageContent.textContent = content;
+            }
+
             messageDiv.appendChild(avatar);
             messageDiv.appendChild(messageContent);
-            
+
             chatMessages.appendChild(messageDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }

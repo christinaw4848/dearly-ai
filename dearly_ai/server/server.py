@@ -20,8 +20,24 @@ class UserMessage(BaseModel):
             message: str
 
 
+
 class AIResponse(BaseModel):
     response: str
+
+class ModelInfo(BaseModel):
+    model: str
+@app.get("/model", response_model=ModelInfo)
+def get_model():
+    """
+    Endpoint to get the current GPT model name used by the AI client.
+    """
+    if client.client is None:
+        return ModelInfo(model="Error: AI client not initialized.")
+    # Try to get the model name from the client
+    model_name = getattr(client.client, "_model", None)
+    if model_name is None:
+        return ModelInfo(model="Unknown")
+    return ModelInfo(model=model_name)
 
 
 @app.get("/")
@@ -40,12 +56,13 @@ def chat_with_ai(user_message: UserMessage):
     Takes a user message and returns an AI response.
     """
     try:
+        if client.client is None:
+            return AIResponse(response="Error: AI client not initialized.")
         # Get response from the AI
         ai_response = client.client.response(user_message.message, debug=client.debug)
-        
         return AIResponse(response=ai_response)
-    
     except Exception as e:
+        # Always return a valid JSON response
         return AIResponse(response=f"Error: {str(e)}")
 
 
@@ -53,6 +70,7 @@ def serve(key, debug=False):
     client.client = Client(key)
     client.debug = debug
     # Run the server (no reload with class approach)
-    uvicorn.run("dearly_ai.server.server:app", host="127.0.0.1", port=8000, reload=False)
+    # changed to 8001 to avoid conflicts, should change back
+    uvicorn.run("dearly_ai.server.server:app", host="127.0.0.1", port=8002, reload=False)
 
 
