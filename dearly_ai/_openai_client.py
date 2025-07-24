@@ -108,11 +108,15 @@ class Client:
                     image_tag = f'<img src="data:image/png;base64,{image_base64}" alt="Generated Image" style="max-width:100%;border-radius:8px;">'
                     result_message = f"[Image generated: {image_path}]<br>{image_tag}"
                     print(f"[Tool Call Output]: {result_message}")
+                    # Add the full image output for frontend, then immediately replace with summary for context
                     self._context.append({
                         "type": "function_call_output",
                         "call_id": tool_call.call_id,
                         "output": result_message
                     })
+                    # Replace the last function_call_output message's output with a summary
+                    if self._context and isinstance(self._context[-1], dict) and self._context[-1].get("type") == "function_call_output":
+                        self._context[-1]["output"] = "[Image generated: output.png]"
 
                     # Filter context for followup model call: remove function_call_output entries and truncate long message contents
                     filtered_context = []
@@ -131,7 +135,11 @@ class Client:
                     # Add the system prompt directly to the filtered context
                     filtered_context.append({
                         "role": "system",
-                        "content": "The image has been generated and shown to the user. Please provide an appropriate follow-up message inquiring about the user's thoughts on the image and if they would like edits."
+                        "content": (
+                            "You have just generated and shown an image to the user. "
+                            "Now, you must ask the user for feedback about the image and specifically inquire if they would like any changes or edits. "
+                            "Do not proceed to generate another image until the user has responded with their feedback or requested edits."
+                        )
                     })
                     followup_response = self._client.responses.create(
                         model=self._model,
